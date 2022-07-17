@@ -33,6 +33,11 @@ private:
     int disabledButtons;
     bool endOfGame;
 
+    QGridLayout* janela;
+
+    int posicaoAtualX;
+    int posicaoAtualY;
+
     void clearButtons();
     void setButtons(int n, int m, int size);
     void setBombs();
@@ -40,6 +45,15 @@ private:
     void bombClicked();
     void win();
     void reset();
+    void botaoSemBombaAdj(int i, int j);
+    void vitoria();
+
+private slots:
+    //void buttonClicked();
+    void difficultyChanged();
+    void showButton();
+
+    void rightButtonClicked();
 };
 
 #endif // WIDGET_H

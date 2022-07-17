@@ -1,5 +1,6 @@
 #include "widget.h"
 
+
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
 {
@@ -12,12 +13,13 @@ Widget::Widget(QWidget *parent)
     dificuldade = 0;
     endOfGame = false;
 
-    //
     difficulties = new QComboBox;
     difficulties->addItem("Facil");
     difficulties->addItem("Medio");
     difficulties->addItem("Dificil");
+    connect(difficulties, SIGNAL(currentIndexChanged(int)), this, SLOT(difficultyChanged()));
     gameLayout->addWidget(difficulties, 2, 0);
+
 
     flags = new QLabel;
     flags->setText("Bandeiras: 10");
@@ -27,7 +29,7 @@ Widget::Widget(QWidget *parent)
     connect(resetButton, &QPushButton::clicked,  this, [&](){reset();} );
     gameLayout->addWidget(resetButton, 1, 0);
 
-    setButtons(8, 10, 20);
+    setButtons(8, 10, 50);
     setBombs();
     setNumbers();
 }
@@ -35,14 +37,14 @@ Widget::Widget(QWidget *parent)
 void Widget::setButtons(int n, int m, int size){
     buttonRows = n;
     buttonColumns = m;
-    buttons = new MyButton**[n];
-    buttonText = new QString*[n];
+    buttons = new MyButton**[buttonRows];
+    buttonText = new QString*[buttonRows];
     for(int i=0; i<buttonRows; ++i){
-        buttons[i] = new MyButton*[m];
-        buttonText[i] = new QString[m];
+        buttons[i] = new MyButton*[buttonColumns];
+        buttonText[i] = new QString[buttonColumns];
     }
     for(int i=0; i<buttonRows; ++i){
-        for(int j=0; j<m; ++j){
+        for(int j=0; j<buttonColumns; ++j){
             buttonText[i][j] = '-';
         }
     }
@@ -68,19 +70,25 @@ void Widget::setButtons(int n, int m, int size){
             buttons[i][j]->setMinimumSize(size, size);
             buttons[i][j]->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
             gameLayout->addWidget(buttons[i][j], i+1, j+1);
+            buttons[i][j]->installEventFilter(this);
+            connect(buttons[i][j], &QPushButton::clicked,  this, [&](){showButton();} );
+            connect(buttons[i][j], SIGNAL(rightClick()), this, SLOT(rightButtonClicked()));
+
+            buttons[i][j]->setStyleSheet("background-color:powderblue");    //teste de cor
         }
     }
 }
 
-void Widget::setBombs(){ // bombák beállítása
+void Widget::setBombs(){
     int nBombas = numberOfBombs;
     while(nBombas > 0){
-        int x = qrand() % buttonRows;
-        int y = qrand() % buttonColumns;
+        int x = rand() % buttonRows;
+        int y = rand() % buttonColumns;
         if (buttonText[x][y] == 'X'){
             continue;
         }
         buttonText[x][y] = 'X';
+        //buttons[x][y]->setText(buttonText[x][y]);   //debug para ver se esta atribuindo valor
         --nBombas;
     }
 }
@@ -104,6 +112,7 @@ void Widget::setNumbers(){
             }
             if(bombaAdjacente != 0){
                 buttonText[i][j] = QString::number(bombaAdjacente);
+                //buttons[i][j]->setText(buttonText[i][j]);   //debug para ver se esta atribuindo valor
             }
         }
     }
@@ -135,17 +144,131 @@ void Widget::reset(){
         flags->setText("Bandeiras: 99");
     }
 }
-//possivelmente funcao cagada
-void Widget::clearButtons(){
-    while(gameLayout->count()){
-       for(int i=0; i<gameLayout->count(); ++i){
-           QWidget *tempWidget = gameLayout->itemAt(i++)->widget();
-           gameLayout->removeWidget(tempWidget);
-           delete tempWidget;
-       }
+
+
+void Widget::bombClicked(){
+    endOfGame = true;
+
+    for(int i=0; i<buttonRows; ++i){
+        for(int j=0; j<buttonColumns; ++j){
+            if(buttonText[i][j] == "X"){
+                buttons[i][j]->setStyleSheet("background-color:red");
+                buttons[i][j]->setText(buttonText[i][j]);
+            }
+        }
     }
-    delete buttons;
-    delete buttonText;
+
+}
+
+void Widget::showButton(){
+    if(endOfGame){
+        return;
+    }
+
+    int x, y;
+    QPushButton* tmp = (QPushButton*)sender();
+    if(tmp->styleSheet()=="background-color:orange"){
+        return;
+    }
+    for(int i=0; i<buttonRows; i++){
+        for(int j=0; j<buttonColumns; j++){
+            if(buttons[i][j] == tmp){
+                x = i;
+                y = j;
+                break;
+            }
+        }
+    }
+    if(buttonText[x][y] == "X"){
+        flags->setText("Voce perdeu!");
+        bombClicked();
+    }
+
+    else if(buttonText[x][y] == '-'){//abrir recursivamente
+        posicaoAtualX = x;
+        posicaoAtualY = y;
+        botaoSemBombaAdj(posicaoAtualX,posicaoAtualY);
+        if( disabledButtons == ((buttonRows*buttonColumns) - numberOfBombs) ){
+            flags->setText("Vitoria!");
+            vitoria();
+        }
+    }
+    else{
+        buttons[x][y]->setText(buttonText[x][y]);
+        buttons[x][y] ->setStyleSheet("color:black");   //teste de cor para numero
+        buttons[x][y] ->setStyleSheet("background-color:pink");
+        buttons[x][y]->setEnabled(false);
+        disabledButtons++;
+        if( disabledButtons == ((buttonRows*buttonColumns) - numberOfBombs) ){
+            flags->setText("Vitoria!");
+            vitoria();
+        }
+    }
+}
+
+void Widget::botaoSemBombaAdj(int i, int j){
+    if(i<0 || i>buttonRows-1 || j<0 || j>buttonColumns-1 || buttonText[i][j] == "X" || !buttons[i][j]->isEnabled()){ // ha nem a játékteren vagyunk, vagy nem hasznáható gomb; rekurzió kilépési feltétele
+        return;
+    }
+    if(buttonText[i][j] == '-'){
+        buttons[i][j]->setStyleSheet("background-color:white");
+        buttons[i][j]->setEnabled(false);
+        disabledButtons++;
+        for(int x=i-1; x<i+2; x++){
+            for(int y=j-1; y<j+2; y++){
+               botaoSemBombaAdj(x,y);
+            }
+        }
+    }
+    if(buttonText[i][j] != '-'){
+        buttons[i][j]->setText(buttonText[i][j]);
+        buttons[i][j] ->setStyleSheet("color:black");
+        buttons[i][j] ->setStyleSheet("background-color:pink");
+        buttons[i][j]->setEnabled(false);
+        disabledButtons++;
+        return;
+    }
+}
+
+void Widget::difficultyChanged(){
+    dificuldade = difficulties->currentIndex();
+    reset();
+}
+
+void Widget::clearButtons(){
+    for(int i=0; i<buttonRows; ++i){
+        for(int j=0; j<buttonColumns; ++j){
+            delete buttons[i][j];
+        }
+    }
+}
+
+void Widget::vitoria(){
+    endOfGame = true;
+    //flags->setText("Vitoria!");
+}
+
+void Widget::rightButtonClicked(){
+    if(endOfGame){
+        return;
+    }
+    if(numberOfFlags==0){
+        return;
+    }
+    QPushButton* tmp = (QPushButton*)sender();
+    if(tmp->styleSheet()=="background-color:orange"){
+       tmp->setStyleSheet("background-color:powderblue");
+       numberOfFlags++;
+       //disabledButtons--;
+       flags->setText("Bandeiras: " + QString::number(numberOfFlags));
+    }
+    else{
+       //flags->setText(tmp->styleSheet());
+       tmp->setStyleSheet("background-color:orange");
+       numberOfFlags--;
+       //disabledButtons++;
+       flags->setText("Bandeiras: " + QString::number(numberOfFlags));
+    }
 }
 
 Widget::~Widget()
