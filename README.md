@@ -1,11 +1,9 @@
 # Projeto de Programação Orientada à Objetos
-Criar um jogo de sudoku em c++
+Criar um campo minado usando o Qt em c++
 
 ## Como jogar
-O objetivo do Sudoku é preencher uma grade de 9x9 com dígitos para que cada coluna, linha e secção de 3x3 contenha números de 1 a 9. No início do jogo, a grade de 9x9 terá alguns quadrados preenchidos. O seu trabalho é usar a lógica para preencher os dígitos que faltam e completar a grade. Não se esqueça, uma jogada está incorreta se:
-
--Qualquer linha contiver mais do que um número igual de 1 a 9
-
--Qualquer coluna contiver mais do que um número igual de 1 a 9
-
--Qualquer grade de 3x3 contiver mais do que um número igual de 1 a 9
+O objetivo do jogo é encotrar todos os espaços vazios evitando as bombas. Ao clicar em um botão será revelado o conteúdo do botã, caso seja uma bomba você perde o jogo e caso não seja uma bomba irá mostrar um número que indica a quantidade de bombas ao redor desse botão.
+Foram desenvolvidas 3 dificuldades para o jogo.
+Facil: Matriz 8x10 com 10 bombas.
+Medio: Matriz 14x18 com 40 bombas.
+Dificil: Matriz 20x24 com 99 bombas.
