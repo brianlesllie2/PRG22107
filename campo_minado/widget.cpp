@@ -179,12 +179,12 @@ void Widget::showButton(){
             }
         }
     }
-    if(buttonText[x][y] == "X"){
+    if(buttonText[x][y] == "X"){    //clicar na bomba
         flags->setText("Voce perdeu!");
         bombClicked();
     }
 
-    else if(buttonText[x][y] == '-'){//abrir recursivamente
+    else if(buttonText[x][y] == '-'){   //abrir recursivamente
         posicaoAtualX = x;
         posicaoAtualY = y;
         botaoSemBombaAdj(posicaoAtualX,posicaoAtualY);
@@ -195,7 +195,7 @@ void Widget::showButton(){
     }
     else{
         buttons[x][y]->setText(buttonText[x][y]);
-        buttons[x][y] ->setStyleSheet("color:black");   //teste de cor para numero
+        buttons[x][y] ->setStyleSheet("color:black");
         buttons[x][y] ->setStyleSheet("background-color:pink");
         buttons[x][y]->setEnabled(false);
         disabledButtons++;
@@ -207,7 +207,7 @@ void Widget::showButton(){
 }
 
 void Widget::botaoSemBombaAdj(int i, int j){
-    if(i<0 || i>buttonRows-1 || j<0 || j>buttonColumns-1 || buttonText[i][j] == "X" || !buttons[i][j]->isEnabled()){ // ha nem a játékteren vagyunk, vagy nem hasznáható gomb; rekurzió kilépési feltétele
+    if(i<0 || i>buttonRows-1 || j<0 || j>buttonColumns-1 || buttonText[i][j] == "X" || !buttons[i][j]->isEnabled()){
         return;
     }
     if(buttonText[i][j] == '-'){
@@ -245,7 +245,6 @@ void Widget::clearButtons(){
 
 void Widget::vitoria(){
     endOfGame = true;
-    //flags->setText("Vitoria!");
 }
 
 void Widget::rightButtonClicked(){
@@ -259,14 +258,11 @@ void Widget::rightButtonClicked(){
     if(tmp->styleSheet()=="background-color:orange"){
        tmp->setStyleSheet("background-color:powderblue");
        numberOfFlags++;
-       //disabledButtons--;
        flags->setText("Bandeiras: " + QString::number(numberOfFlags));
     }
     else{
-       //flags->setText(tmp->styleSheet());
        tmp->setStyleSheet("background-color:orange");
        numberOfFlags--;
-       //disabledButtons++;
        flags->setText("Bandeiras: " + QString::number(numberOfFlags));
     }
 }
