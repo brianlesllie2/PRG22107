@@ -21,39 +21,30 @@ public:
 
 private:
     QGridLayout* gameLayout;
-    QComboBox* difficulties;
-    QPushButton* resetButton;
-    QString** buttonText;   //texto dos botoes ex: bomba, 1, 2
-    QLabel* flags;
-    MyButton*** buttons;
-    int dificuldade;
-    int buttonRows, buttonColumns;
-    int numberOfBombs;
-    int numberOfFlags;
-    int disabledButtons;
-    bool endOfGame;
-
-    QGridLayout* janela;
-
-    int posicaoAtualX;
-    int posicaoAtualY;
-
-    void clearButtons();
-    void setButtons(int n, int m, int size);
-    void setBombs();
-    void setNumbers();
-    void bombClicked();
-    void win();
-    void reset();
-    void botaoSemBombaAdj(int i, int j);
-    void vitoria();
+    QComboBox* difficulties;        //selecao de dificuldades
+    QPushButton* resetButton;       //botao para reiniciar o jogo
+    QString** valorBotao;           //texto dos botoes ex: bomba, 1, 2
+    QLabel* bandeiras;              //indica a quantidade de bombas no jogo
+    MyButton*** botoes;             //botoes do jogo
+    int dificuldade;                //variavel que controla o tamanho da matriz e quantidade de bombas
+    int numDeLinhas, numDeColunas;  //numero de linhas e colunas da matriz
+    int numDeBombas;                //quantidade de bombas no jogo
+    int numDeBandeiras;             //quantidade de bandeiras no jogo
+    int botoesDesativados;          //variavel para controlar os botes clicados
+    bool fimDeJogo;
 
 private slots:
-    //void buttonClicked();
-    void difficultyChanged();
-    void showButton();
-
-    void rightButtonClicked();
+    void criaBotoes(int n, int m, int size);    //cria a matriz de botoes
+    void geraBombas();                          //define as posicoes das bombas no jogo
+    void atribuiNumeroBombaAdj();               //define os numeros que indicam as bombas ao redor
+    void destroiBotoes();                       //destroi os botoes do jogo atual e cria novos
+    void reset();                               //reinicia o jogo
+    void mostraValorBotao();                    //mostra o que tem no botao clicado
+    void cliqueNaBomba();                       //mostra as posicoes das bombas e encerra o jogo
+    void botaoSemBombaAdj(int i, int j);        //abre os arredores ao clicar em um espaco sem bomba e numero
+    void vitoria();                             //encerra o jogo caso acabem os botoes sem bombas
+    void mudaDificuldade();                     //altera a dificuldade e reinicia o jogo
+    void rightButtonClicked();                  //atribui uma bandeira para a localizacao de bomba
 };
 
 #endif // WIDGET_H

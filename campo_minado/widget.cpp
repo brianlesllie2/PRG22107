@@ -4,164 +4,155 @@
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
 {
+    srand(time(NULL));
 
     gameLayout = new QGridLayout;
     setLayout(gameLayout);
 
     //inicializacao
-    disabledButtons = 0;
+    botoesDesativados = 0;
     dificuldade = 0;
-    endOfGame = false;
+    fimDeJogo = false;
 
-    difficulties = new QComboBox;
-    difficulties->addItem("Facil");
-    difficulties->addItem("Medio");
-    difficulties->addItem("Dificil");
-    connect(difficulties, SIGNAL(currentIndexChanged(int)), this, SLOT(difficultyChanged()));
-    gameLayout->addWidget(difficulties, 2, 0);
-
-
-    flags = new QLabel;
-    flags->setText("Bandeiras: 10");
-    gameLayout->addWidget(flags, 0, 0);
+    bandeiras = new QLabel;
+    bandeiras->setText("Bandeiras: 10");
+    gameLayout->addWidget(bandeiras, 0, 0);
 
     resetButton = new QPushButton("Reset");
     connect(resetButton, &QPushButton::clicked,  this, [&](){reset();} );
     gameLayout->addWidget(resetButton, 1, 0);
 
-    setButtons(8, 10, 50);
-    setBombs();
-    setNumbers();
+    difficulties = new QComboBox;
+    difficulties->addItem("Facil");
+    difficulties->addItem("Medio");
+    difficulties->addItem("Dificil");
+    connect(difficulties, SIGNAL(currentIndexChanged(int)), this, SLOT(mudaDificuldade()));
+    gameLayout->addWidget(difficulties, 2, 0);
+
+    criaBotoes(8, 10, 50);
+    geraBombas();
+    atribuiNumeroBombaAdj();
 }
 
-void Widget::setButtons(int n, int m, int size){
-    buttonRows = n;
-    buttonColumns = m;
-    buttons = new MyButton**[buttonRows];
-    buttonText = new QString*[buttonRows];
-    for(int i=0; i<buttonRows; ++i){
-        buttons[i] = new MyButton*[buttonColumns];
-        buttonText[i] = new QString[buttonColumns];
+void Widget::criaBotoes(int n, int m, int size){
+    numDeLinhas = n;
+    numDeColunas = m;
+    botoes = new MyButton**[numDeLinhas];
+    valorBotao = new QString*[numDeLinhas];
+    for(int i=0; i<numDeLinhas; ++i){
+        botoes[i] = new MyButton*[numDeColunas];
+        valorBotao[i] = new QString[numDeColunas];
     }
-    for(int i=0; i<buttonRows; ++i){
-        for(int j=0; j<buttonColumns; ++j){
-            buttonText[i][j] = '-';
+    for(int i=0; i<numDeLinhas; ++i){
+        for(int j=0; j<numDeColunas; ++j){
+            valorBotao[i][j] = '-';
         }
     }
 
     switch (dificuldade) {
         case 0:
-            numberOfBombs = 10;
-            numberOfFlags = 10;
+            numDeBombas = 10;
+            numDeBandeiras = 10;
             break;
         case 1:
-            numberOfBombs = 40;
-            numberOfFlags = 40;
+            numDeBombas = 40;
+            numDeBandeiras = 40;
             break;
         case 2:
-            numberOfBombs = 99;
-            numberOfFlags = 99;
+            numDeBombas = 99;
+            numDeBandeiras = 99;
             break;
     }
 
-    for(int i=0; i<buttonRows; ++i){
-        for(int j=0; j<buttonColumns; ++j){
-            buttons[i][j] = new MyButton(this);
-            buttons[i][j]->setMinimumSize(size, size);
-            buttons[i][j]->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-            gameLayout->addWidget(buttons[i][j], i+1, j+1);
-            buttons[i][j]->installEventFilter(this);
-            connect(buttons[i][j], &QPushButton::clicked,  this, [&](){showButton();} );
-            connect(buttons[i][j], SIGNAL(rightClick()), this, SLOT(rightButtonClicked()));
-
-            buttons[i][j]->setStyleSheet("background-color:powderblue");    //teste de cor
+    for(int i=0; i<numDeLinhas; ++i){    //gera a matriz de botoes
+        for(int j=0; j<numDeColunas; ++j){
+            botoes[i][j] = new MyButton(this);
+            botoes[i][j]->setMinimumSize(size, size);
+            botoes[i][j]->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+            gameLayout->addWidget(botoes[i][j], i+1, j+1);
+            connect(botoes[i][j], &QPushButton::clicked,  this, [&](){mostraValorBotao();} );    //conecta clique esquerdo
+            connect(botoes[i][j], SIGNAL(rightClick()), this, SLOT(rightButtonClicked())); //conecta clique direito
+            botoes[i][j]->setStyleSheet("background-color:powderblue");    //cor dos botoes
         }
     }
 }
 
-void Widget::setBombs(){
-    int nBombas = numberOfBombs;
+void Widget::geraBombas(){
+    int nBombas = numDeBombas;
     while(nBombas > 0){
-        int x = rand() % buttonRows;
-        int y = rand() % buttonColumns;
-        if (buttonText[x][y] == 'X'){
+        int x = rand() % numDeLinhas;
+        int y = rand() % numDeColunas;
+        if (valorBotao[x][y] == 'X'){
             continue;
         }
-        buttonText[x][y] = 'X';
-        //buttons[x][y]->setText(buttonText[x][y]);   //debug para ver se esta atribuindo valor
+        valorBotao[x][y] = 'X';
+        //botoes[x][y]->setText(valorBotao[x][y]);   //debug para ver se esta atribuindo valor
         --nBombas;
     }
 }
 
-void Widget::setNumbers(){
-    for(int i=0; i<buttonRows; ++i){
-        for(int j=0; j<buttonColumns; ++j){
-            if(buttonText[i][j] == 'X'){
+void Widget::atribuiNumeroBombaAdj(){
+    for(int i=0; i<numDeLinhas; ++i){
+        for(int j=0; j<numDeColunas; ++j){
+            if(valorBotao[i][j] == 'X'){
                 continue;
             }
             int bombaAdjacente = 0;
             for(int x=i-1; x<i+2; ++x){
                 for(int y=j-1; y<j+2; ++y){
-                    if(x<0 || x>buttonRows-1 || y<0 || y>buttonColumns-1){
+                    if(x<0 || x>numDeLinhas-1 || y<0 || y>numDeColunas-1){
                         continue;
                     }
-                    if(buttonText[x][y] == "X"){
+                    if(valorBotao[x][y] == "X"){
                         ++bombaAdjacente;
                     }
                 }
             }
             if(bombaAdjacente != 0){
-                buttonText[i][j] = QString::number(bombaAdjacente);
-                //buttons[i][j]->setText(buttonText[i][j]);   //debug para ver se esta atribuindo valor
+                valorBotao[i][j] = QString::number(bombaAdjacente);
+                //botoes[i][j]->setText(valorBotao[i][j]);   //debug para ver se esta atribuindo valor
             }
+        }
+    }
+}
+
+void Widget::destroiBotoes(){
+    for(int i=0; i<numDeLinhas; ++i){
+        for(int j=0; j<numDeColunas; ++j){
+            delete botoes[i][j];
         }
     }
 }
 
 void Widget::reset(){
-    endOfGame = false;
-    disabledButtons = 0;
+    fimDeJogo = false;
+    botoesDesativados = 0;
 
     if(dificuldade == 0){
-        clearButtons();
-        setButtons(8, 10, 50);
-        setBombs();
-        setNumbers();
-        flags->setText("Bandeiras: 10");
+        destroiBotoes();
+        criaBotoes(8, 10, 50);
+        geraBombas();
+        atribuiNumeroBombaAdj();
+        bandeiras->setText("Bandeiras: 10");
     }
     else if(dificuldade == 1){
-        clearButtons();
-        setButtons(14, 18, 40);
-        setBombs();
-        setNumbers();
-        flags->setText("Bandeiras: 40");
+        destroiBotoes();
+        criaBotoes(14, 18, 40);
+        geraBombas();
+        atribuiNumeroBombaAdj();
+        bandeiras->setText("Bandeiras: 40");
     }
     else{
-        clearButtons();
-        setButtons(20, 24, 30);
-        setBombs();
-        setNumbers();
-        flags->setText("Bandeiras: 99");
+        destroiBotoes();
+        criaBotoes(20, 24, 30);
+        geraBombas();
+        atribuiNumeroBombaAdj();
+        bandeiras->setText("Bandeiras: 99");
     }
 }
 
-
-void Widget::bombClicked(){
-    endOfGame = true;
-
-    for(int i=0; i<buttonRows; ++i){
-        for(int j=0; j<buttonColumns; ++j){
-            if(buttonText[i][j] == "X"){
-                buttons[i][j]->setStyleSheet("background-color:red");
-                buttons[i][j]->setText(buttonText[i][j]);
-            }
-        }
-    }
-
-}
-
-void Widget::showButton(){
-    if(endOfGame){
+void Widget::mostraValorBotao(){  //mostra o valor que esta no botao
+    if(fimDeJogo){
         return;
     }
 
@@ -170,100 +161,104 @@ void Widget::showButton(){
     if(tmp->styleSheet()=="background-color:orange"){
         return;
     }
-    for(int i=0; i<buttonRows; i++){
-        for(int j=0; j<buttonColumns; j++){
-            if(buttons[i][j] == tmp){
+    for(int i=0; i<numDeLinhas; i++){    //define o botao clicado em termos de x,y
+        for(int j=0; j<numDeColunas; j++){
+            if(botoes[i][j] == tmp){
                 x = i;
                 y = j;
                 break;
             }
         }
     }
-    if(buttonText[x][y] == "X"){    //clicar na bomba
-        flags->setText("Voce perdeu!");
-        bombClicked();
+    if(valorBotao[x][y] == "X"){    //se clicar na bomba
+        bandeiras->setText("Voce perdeu!");
+        cliqueNaBomba();
     }
 
-    else if(buttonText[x][y] == '-'){   //abrir recursivamente
-        posicaoAtualX = x;
-        posicaoAtualY = y;
-        botaoSemBombaAdj(posicaoAtualX,posicaoAtualY);
-        if( disabledButtons == ((buttonRows*buttonColumns) - numberOfBombs) ){
-            flags->setText("Vitoria!");
+    else if(valorBotao[x][y] == '-'){   //abrir recursivamente caso clique em um espaco sem bomba
+        botaoSemBombaAdj(x,y);
+        if( botoesDesativados == ((numDeLinhas*numDeColunas) - numDeBombas) ){
+            bandeiras->setText("Vitoria!");
             vitoria();
         }
     }
-    else{
-        buttons[x][y]->setText(buttonText[x][y]);
-        buttons[x][y] ->setStyleSheet("color:black");
-        buttons[x][y] ->setStyleSheet("background-color:pink");
-        buttons[x][y]->setEnabled(false);
-        disabledButtons++;
-        if( disabledButtons == ((buttonRows*buttonColumns) - numberOfBombs) ){
-            flags->setText("Vitoria!");
+    else{   //caso seja um espaco com bomba ao redor
+        botoes[x][y]->setText(valorBotao[x][y]);
+        botoes[x][y] ->setStyleSheet("color:black");
+        botoes[x][y] ->setStyleSheet("background-color:pink");
+        botoes[x][y]->setEnabled(false);
+        botoesDesativados++;
+        if( botoesDesativados == ((numDeLinhas*numDeColunas) - numDeBombas) ){
+            bandeiras->setText("Vitoria!");
             vitoria();
         }
     }
 }
 
-void Widget::botaoSemBombaAdj(int i, int j){
-    if(i<0 || i>buttonRows-1 || j<0 || j>buttonColumns-1 || buttonText[i][j] == "X" || !buttons[i][j]->isEnabled()){
+void Widget::cliqueNaBomba(){
+    fimDeJogo = true;
+
+    for(int i=0; i<numDeLinhas; ++i){
+        for(int j=0; j<numDeColunas; ++j){
+            if(valorBotao[i][j] == "X"){
+                botoes[i][j]->setStyleSheet("background-color:red");
+                botoes[i][j]->setText(valorBotao[i][j]);
+            }
+        }
+    }
+
+}
+
+void Widget::botaoSemBombaAdj(int i, int j){    //metodo para abrir recursivamente
+    if(i<0 || i>numDeLinhas-1 || j<0 || j>numDeColunas-1 || valorBotao[i][j] == "X" || !botoes[i][j]->isEnabled()){
         return;
     }
-    if(buttonText[i][j] == '-'){
-        buttons[i][j]->setStyleSheet("background-color:white");
-        buttons[i][j]->setEnabled(false);
-        disabledButtons++;
+    if(valorBotao[i][j] == '-'){
+        botoes[i][j]->setStyleSheet("background-color:white");
+        botoes[i][j]->setEnabled(false);
+        botoesDesativados++;
         for(int x=i-1; x<i+2; x++){
             for(int y=j-1; y<j+2; y++){
                botaoSemBombaAdj(x,y);
             }
         }
     }
-    if(buttonText[i][j] != '-'){
-        buttons[i][j]->setText(buttonText[i][j]);
-        buttons[i][j] ->setStyleSheet("color:black");
-        buttons[i][j] ->setStyleSheet("background-color:pink");
-        buttons[i][j]->setEnabled(false);
-        disabledButtons++;
+    if(valorBotao[i][j] != '-'){
+        botoes[i][j]->setText(valorBotao[i][j]);
+        botoes[i][j] ->setStyleSheet("color:black");
+        botoes[i][j] ->setStyleSheet("background-color:pink");
+        botoes[i][j]->setEnabled(false);
+        botoesDesativados++;
         return;
-    }
-}
-
-void Widget::difficultyChanged(){
-    dificuldade = difficulties->currentIndex();
-    reset();
-}
-
-void Widget::clearButtons(){
-    for(int i=0; i<buttonRows; ++i){
-        for(int j=0; j<buttonColumns; ++j){
-            delete buttons[i][j];
-        }
     }
 }
 
 void Widget::vitoria(){
-    endOfGame = true;
+    fimDeJogo = true;
+}
+
+void Widget::mudaDificuldade(){
+    dificuldade = difficulties->currentIndex();
+    reset();
 }
 
 void Widget::rightButtonClicked(){
-    if(endOfGame){
+    if(fimDeJogo){
         return;
     }
-    if(numberOfFlags==0){
+    if(numDeBandeiras==0){
         return;
     }
     QPushButton* tmp = (QPushButton*)sender();
     if(tmp->styleSheet()=="background-color:orange"){
        tmp->setStyleSheet("background-color:powderblue");
-       numberOfFlags++;
-       flags->setText("Bandeiras: " + QString::number(numberOfFlags));
+       numDeBandeiras++;
+       bandeiras->setText("Bandeiras: " + QString::number(numDeBandeiras));
     }
     else{
        tmp->setStyleSheet("background-color:orange");
-       numberOfFlags--;
-       flags->setText("Bandeiras: " + QString::number(numberOfFlags));
+       numDeBandeiras--;
+       bandeiras->setText("Bandeiras: " + QString::number(numDeBandeiras));
     }
 }
 
