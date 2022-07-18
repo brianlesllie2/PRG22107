@@ -2,7 +2,7 @@
 Criar um campo minado usando o Qt em c++
 
 ## Como jogar
-O objetivo do jogo é encotrar todos os espaços vazios evitando as bombas. Ao clicar em um botão será revelado o conteúdo do botã, caso seja uma bomba você perde o jogo e caso não seja uma bomba irá mostrar um número que indica a quantidade de bombas ao redor desse botão.
+O objetivo do jogo é encontrar todos os espaços vazios evitando as bombas. Ao clicar em um botão será revelado o conteúdo do botão, caso seja uma bomba você perde o jogo e caso não seja uma bomba irá mostrar um número que indica a quantidade de bombas ao redor desse botão.
 
 Foram desenvolvidas 3 dificuldades para o jogo.
 
